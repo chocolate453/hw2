@@ -29,10 +29,12 @@ double User::getBalance() const
 
 void User::deductAmount(double amt)
 {
-    balance_ -= amt;
+
+  balance_ -= amt;
+    
 }
 
 void User::dump(std::ostream& os)
 {
-    os << name_ << " "  << balance_ << " " << type_ << endl;
+    os << name_ << " " << balance_ << " " << type_ << endl;
 }
