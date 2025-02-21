@@ -9,6 +9,7 @@
 #include "db_parser.h"
 #include "product_parser.h"
 #include "util.h"
+#include "mydatastore.h"
 
 using namespace std;
 struct ProdNameSorter {
@@ -29,7 +30,9 @@ int main(int argc, char* argv[])
      * Declare your derived DataStore object here replacing
      *  DataStore type to your derived type
      ****************/
-    DataStore ds;
+    //DataStore ds;
+    //change to:
+    DataStore* ds = new MyDataStore();
 
 
 
@@ -46,7 +49,8 @@ int main(int argc, char* argv[])
     parser.addSectionParser("users", userSectionParser);
 
     // Now parse the database to populate the DataStore
-    if( parser.parse(argv[1], ds) ) {
+    //add the * 
+    if( parser.parse(argv[1], *ds) ) {
         cerr << "Error parsing!" << endl;
         return 1;
     }
@@ -77,7 +81,7 @@ int main(int argc, char* argv[])
                     term = convToLower(term);
                     terms.push_back(term);
                 }
-                hits = ds.search(terms, 0);
+                hits = ds->search(terms, 0);
                 displayProducts(hits);
             }
             else if ( cmd == "OR" ) {
@@ -87,22 +91,95 @@ int main(int argc, char* argv[])
                     term = convToLower(term);
                     terms.push_back(term);
                 }
-                hits = ds.search(terms, 1);
+                hits = ds->search(terms, 1);
                 displayProducts(hits);
             }
             else if ( cmd == "QUIT") {
                 string filename;
                 if(ss >> filename) {
                     ofstream ofile(filename.c_str());
-                    ds.dump(ofile);
+                    ds->dump(ofile);
                     ofile.close();
                 }
                 done = true;
             }
 	    /* Add support for other commands here */
-
-
-
+            else if(cmd == "ADD")
+            {
+              //initilize variables  
+              string username;
+              size_t hitIDX;
+              //make the username lowercase for comparision
+              username = convToLower(username);
+              //read in the argumments 
+              if(ss >> username >> hitIDX)
+              {
+                //try to cast ds to MyDataStore to access methods
+                MyDataStore* myDS = dynamic_cast<MyDataStore*>(ds);
+                //check if in bound 
+                if(hitIDX > 0 && hitIDX <= hits.size()) 
+                {
+                  //now add the user's product to cart
+                  myDS->addToCart(username, hits[hitIDX - 1]);
+                }
+                //otherwise not in bound
+                else 
+                {
+                  cout << "Invalid ADD command format!" << endl;
+                }
+              }
+            }
+            else if (cmd == "VIEWCART") 
+            {
+              //initilize variables + convert to lowecase to pass
+              string username;
+              username = convToLower(username);
+              //read in the sstream
+              if(ss >> username) 
+              {
+                //try to cast ds to MyDataStore to access methods
+                MyDataStore* myDS = dynamic_cast<MyDataStore*>(ds);
+                if(myDS) 
+                {
+                  //call that user's cart to see it 
+                  myDS->viewCart(username);
+                } 
+                else 
+                {
+                  //otherwise it is an error
+                  cout << "Error: Invalid data store type!" << endl;
+                }
+              } 
+              else 
+              {
+                cout << "Invalid VIEWCART command format!" << endl;
+              }
+            }
+            else if (cmd == "BUYCART") 
+            {
+              //initilize variables + convert to lowecase to pass
+              string username;
+              username = convToLower(username);
+              //read in the sstream
+              if(ss >> username) 
+              {
+                //try to cast ds to MyDataStore to access methods
+                MyDataStore* myDS = dynamic_cast<MyDataStore*>(ds);
+                if (myDS) 
+                {
+                  //if it pass then buy whatever is in that user's cart
+                  myDS->buyCart(username);
+                } 
+                else 
+                {
+                  cout << "Error: Invalid data store type!" << endl;
+                }
+              } 
+              else 
+              {
+                cout << "Invalid BUYCART command format!" << endl;
+              }
+            }
 
             else {
                 cout << "Unknown command" << endl;
@@ -110,6 +187,7 @@ int main(int argc, char* argv[])
         }
 
     }
+    delete ds;
     return 0;
 }
 
